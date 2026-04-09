@@ -1,12 +1,3 @@
-// ── AUTH ───────────────────────────────────────────────────────────────
-const token = localStorage.getItem('admin_token');
-if (!token) window.location.href = 'login.html';
-
-const username = localStorage.getItem('admin_username') || 'Admin';
-document.getElementById('user-name').textContent   = username;
-document.getElementById('user-avatar').textContent = username.charAt(0).toUpperCase();
-
-document.getElementById('logout-btn').onclick = () => { localStorage.clear(); window.location.href = 'login.html'; };
 
 // ── TOAST ──────────────────────────────────────────────────────────────
 function showToast(msg, type = 'info') {
