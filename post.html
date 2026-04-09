@@ -1,1 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Loading... — The Chronicle</title>
+  <meta name="description" content="" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
 
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="site-logo">
+        <div class="site-logo-dot"></div>
+        Chronicle
+      </a>
+      <nav class="site-nav">
+        <a href="index.html">Home</a>
+      </nav>
+    </div>
+  </header>
+
+  <article id="post-container" class="post-article">
+    <a href="index.html" class="back-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="m15 18-6-6 6-6"/>
+      </svg>
+      Back to all stories
+    </a>
+
+    <div id="post-content">
+      <!-- Skeleton loader -->
+      <div>
+        <div class="skeleton" style="height:13px;width:90px;margin-bottom:1.2rem;border-radius:100px"></div>
+        <div class="skeleton" style="height:52px;width:92%;margin-bottom:0.5rem"></div>
+        <div class="skeleton" style="height:52px;width:74%;margin-bottom:1.5rem"></div>
+        <div class="skeleton" style="height:13px;width:220px;margin-bottom:2.2rem"></div>
+        <div class="skeleton" style="height:380px;margin-bottom:2.2rem"></div>
+        <div class="skeleton" style="height:13px;width:100%;margin-bottom:0.9rem"></div>
+        <div class="skeleton" style="height:13px;width:100%;margin-bottom:0.9rem"></div>
+        <div class="skeleton" style="height:13px;width:80%;margin-bottom:0.9rem"></div>
+        <div class="skeleton" style="height:13px;width:95%;margin-bottom:0.9rem"></div>
+        <div class="skeleton" style="height:13px;width:65%"></div>
+      </div>
+    </div>
+  </article>
+
+  <footer class="site-footer">
+    <p>&copy; 2024 <strong>The Chronicle</strong> &mdash; All rights reserved.</p>
+  </footer>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/post.js"></script>
+</body>
+</html>
