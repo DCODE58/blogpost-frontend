@@ -1,8 +1,3 @@
-// ── AUTH GUARD ─────────────────────────────────────────────────────────
-const token = localStorage.getItem('admin_token');
-if (!token) window.location.href = 'login.html';
-
-const username = localStorage.getItem('admin_username') || 'Admin';
 
 // ── SIDEBAR TOGGLE (mobile) ────────────────────────────────────────────
 function toggleSidebar() {
