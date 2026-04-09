@@ -1,0 +1,196 @@
+// ── AUTH ───────────────────────────────────────────────────────────────
+const token = localStorage.getItem('admin_token');
+if (!token) window.location.href = 'login.html';
+
+const username = localStorage.getItem('admin_username') || 'Admin';
+document.getElementById('user-name').textContent   = username;
+document.getElementById('user-avatar').textContent = username.charAt(0).toUpperCase();
+document.getElementById('logout-btn').onclick = () => { localStorage.clear(); window.location.href = 'login.html'; };
+
+// ── SIDEBAR TOGGLE (mobile) ────────────────────────────────────────────
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
+
+// ── POST ID ────────────────────────────────────────────────────────────
+const params = new URLSearchParams(window.location.search);
+const postId = params.get('id');
+
+if (!postId || isNaN(postId)) window.location.href = 'dashboard.html';
+
+document.getElementById('post-id-badge').textContent = `#${postId}`;
+
+// ── TOAST ──────────────────────────────────────────────────────────────
+function showToast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show${type === 'error' ? ' error' : type === 'success' ? ' success' : ''}`;
+  setTimeout(() => t.className = 'toast', 3200);
+}
+
+// ── QUILL ──────────────────────────────────────────────────────────────
+const quill = new Quill('#quill-editor', {
+  theme: 'snow',
+  placeholder: 'Write your story here...',
+  modules: {
+    toolbar: [
+      [{ header: [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      ['blockquote', 'code-block'],
+      [{ list: 'ordered' }, { list: 'bullet' }],
+      ['link', 'image'],
+      ['clean'],
+    ],
+  },
+});
+
+// ── STATUS TOGGLE ──────────────────────────────────────────────────────
+document.querySelectorAll('.toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('post-status').value = btn.dataset.status;
+  });
+});
+
+function setStatus(status) {
+  document.getElementById('post-status').value = status;
+  document.querySelectorAll('.toggle-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.status === status);
+  });
+}
+
+// ── IMAGE PREVIEW ──────────────────────────────────────────────────────
+document.getElementById('post-image').addEventListener('input', (e) => {
+  const url     = e.target.value.trim();
+  const preview = document.getElementById('image-preview');
+  const img     = document.getElementById('preview-img');
+
+  if (url && url.startsWith('http')) {
+    img.src = url;
+    img.onload  = () => preview.classList.add('visible');
+    img.onerror = () => preview.classList.remove('visible');
+  } else {
+    preview.classList.remove('visible');
+  }
+});
+
+// ── LOAD POST ──────────────────────────────────────────────────────────
+async function loadPost() {
+  try {
+    const res = await fetch(`${window.API_BASE}/posts/admin/${postId}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+
+    if (res.status === 401) { localStorage.clear(); window.location.href = 'login.html'; return; }
+    if (!res.ok) throw new Error('Post not found');
+
+    const post = await res.json();
+
+    document.getElementById('post-title').value    = post.title;
+    document.getElementById('post-image').value    = post.image_url || '';
+    document.getElementById('post-category').value = post.category  || 'General';
+
+    setStatus(post.status || 'draft');
+
+    quill.root.innerHTML = post.content || '';
+
+    // Image preview
+    if (post.image_url) {
+      const img = document.getElementById('preview-img');
+      img.src = post.image_url;
+      img.onload = () => document.getElementById('image-preview').classList.add('visible');
+    }
+
+    // Preview link
+    if (post.status === 'published') {
+      const link = document.getElementById('preview-link');
+      link.href = `../post.html?id=${postId}`;
+      link.style.display = 'inline-flex';
+    }
+
+    document.getElementById('loading-overlay').style.display = 'none';
+    document.getElementById('editor-container').style.display = 'block';
+
+  } catch (err) {
+    document.getElementById('loading-overlay').innerHTML = `
+      <div style="text-align:center;color:var(--muted)">
+        <p style="font-family:var(--font-ui);font-weight:600">Post not found.</p>
+        <a href="dashboard.html" class="btn btn-secondary" style="margin-top:1rem">Back to Dashboard</a>
+      </div>`;
+  }
+}
+
+// ── UPDATE POST ────────────────────────────────────────────────────────
+async function updatePost() {
+  const title     = document.getElementById('post-title').value.trim();
+  const content   = quill.root.innerHTML.trim();
+  const image_url = document.getElementById('post-image').value.trim();
+  const category  = document.getElementById('post-category').value;
+  const status    = document.getElementById('post-status').value;
+  const errBox    = document.getElementById('form-error');
+
+  errBox.style.display = 'none';
+
+  if (!title || title.length < 3) {
+    errBox.textContent  = 'Title is required (at least 3 characters).';
+    errBox.style.display = 'block';
+    document.getElementById('post-title').focus();
+    return;
+  }
+
+  if (!content || quill.getText().trim().length < 10) {
+    errBox.textContent  = 'Content is required.';
+    errBox.style.display = 'block';
+    return;
+  }
+
+  ['update-btn', 'update-btn-2'].forEach(id => {
+    const b = document.getElementById(id);
+    if (b) { b.classList.add('loading'); b.disabled = true; }
+  });
+
+  try {
+    const res = await fetch(`${window.API_BASE}/posts/${postId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ title, content, image_url: image_url || null, category, status }),
+    });
+
+    if (res.status === 401) { localStorage.clear(); window.location.href = 'login.html'; return; }
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Update failed');
+
+    showToast('Post updated successfully!', 'success');
+
+    // Update preview link
+    if (status === 'published') {
+      const link = document.getElementById('preview-link');
+      link.href = `../post.html?id=${postId}`;
+      link.style.display = 'inline-flex';
+    }
+  } catch (err) {
+    errBox.textContent  = err.message || 'Something went wrong.';
+    errBox.style.display = 'block';
+  } finally {
+    ['update-btn', 'update-btn-2'].forEach(id => {
+      const b = document.getElementById(id);
+      if (b) { b.classList.remove('loading'); b.disabled = false; }
+    });
+  }
+}
+
+document.getElementById('update-btn').onclick   = updatePost;
+document.getElementById('update-btn-2').onclick = updatePost;
+
+// ── INIT ───────────────────────────────────────────────────────────────
+loadPost();
