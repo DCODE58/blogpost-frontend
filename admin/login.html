@@ -1,65 +1,124 @@
-if (localStorage.getItem('admin_token')) {
-  window.location.href = 'dashboard.html';
-}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login — The Chronicle</title>
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
 
-const form   = document.getElementById('login-form');
-const btn    = document.getElementById('login-btn');
-const errBox = document.getElementById('login-error');
+<div class="login-page">
 
-function setLoading(v) {
-  btn.classList.toggle('loading', v);
-  btn.disabled = v;
-}
+  <!-- LEFT PANEL - decorative -->
+  <div class="login-left">
+    <div class="login-decoration">
+      <div class="login-badge">Content Management</div>
+      <div class="login-big-text">
+        The<br /><em>Chronicle</em>
+      </div>
+      <p class="login-tagline">Write. Publish. Inspire.</p>
+      <div class="login-chips">
+        <div class="chip chip-yellow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            style="width:13px;height:13px;display:inline;margin-right:4px">
+            <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+          Create
+        </div>
+        <div class="chip chip-pink">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            style="width:13px;height:13px;display:inline;margin-right:4px">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+          Publish
+        </div>
+        <div class="chip chip-sage">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            style="width:13px;height:13px;display:inline;margin-right:4px">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          Analyse
+        </div>
+      </div>
+    </div>
+  </div>
 
-function showFieldError(fieldId, errId, msg) {
-  const field = document.getElementById(fieldId);
-  const err   = document.getElementById(errId);
-  if (msg) {
-    field.style.borderColor = 'var(--danger)';
-    err.classList.add('show');
-    err.textContent = msg;
-  } else {
-    field.style.borderColor = '';
-    err.classList.remove('show');
-  }
-}
+  <!-- RIGHT PANEL - form -->
+  <div class="login-right">
+    <div class="login-box">
 
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const username = document.getElementById('username').value.trim();
-  const password = document.getElementById('password').value;
+      <div class="login-logo">
+        <div class="login-logo-dot"></div>
+        Chronicle
+      </div>
 
-  let valid = true;
-  if (!username) { showFieldError('username', 'username-err', 'Required'); valid = false; }
-  else showFieldError('username', 'username-err', '');
-  if (!password) { showFieldError('password', 'password-err', 'Required'); valid = false; }
-  else showFieldError('password', 'password-err', '');
-  if (!valid) return;
+      <h1 class="login-title">Welcome<br />back</h1>
+      <p class="login-subtitle">Sign in to manage your content</p>
 
-  errBox.style.display = 'none';
-  setLoading(true);
+      <form id="login-form" novalidate>
 
-  try {
-    const res  = await fetch(`${window.API_BASE}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    });
-    const data = await res.json();
+        <div class="form-group">
+          <label class="form-label" for="username">Username</label>
+          <input
+            id="username"
+            class="form-input"
+            type="text"
+            placeholder="admin"
+            autocomplete="username"
+            required
+          />
+          <span class="form-error" id="username-err">Username is required</span>
+        </div>
 
-    if (!res.ok) {
-      errBox.textContent  = data.error || 'Invalid credentials.';
-      errBox.style.display = 'block';
-      return;
-    }
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input
+            id="password"
+            class="form-input"
+            type="password"
+            placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
+            autocomplete="current-password"
+            required
+          />
+          <span class="form-error" id="password-err">Password is required</span>
+        </div>
 
-    localStorage.setItem('admin_token', data.token);
-    localStorage.setItem('admin_username', data.username);
-    window.location.href = 'dashboard.html';
-  } catch {
-    errBox.textContent  = 'Cannot connect to server. Is the backend running?';
-    errBox.style.display = 'block';
-  } finally {
-    setLoading(false);
-  }
-});
+        <div id="login-error"
+          style="display:none;margin-bottom:1.2rem;padding:0.8rem 1rem;
+            background:var(--danger-pale);color:var(--danger);
+            border:2px solid var(--danger);border-radius:var(--radius-sm);
+            font-family:var(--font-ui);font-weight:700;font-size:0.84rem">
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg btn-full" id="login-btn">
+          <div class="btn-loader"></div>
+          <span class="btn-text">Sign In</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+            <polyline points="10 17 15 12 10 7"/>
+            <line x1="15" y1="12" x2="3" y2="12"/>
+          </svg>
+        </button>
+
+      </form>
+
+      <p style="margin-top:1.6rem;text-align:center">
+        <a href="../index.html"
+          style="font-family:var(--font-ui);font-size:0.8rem;font-weight:700;
+            color:var(--muted);display:inline-flex;align-items:center;gap:0.35rem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+            <path d="m15 18-6-6 6-6"/>
+          </svg>
+          Back to public site
+        </a>
+      </p>
+
+    </div>
+  </div>
+</div>
+
+<script src="../js/config.js"></script>
+<script src="js/login.js"></script>
+</body>
+</html>
