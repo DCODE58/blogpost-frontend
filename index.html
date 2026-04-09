@@ -1,1 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Chronicle — Stories Worth Reading</title>
+  <meta name="description" content="A curated blog platform with stories, insights, and perspectives." />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
 
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="site-logo">
+        <div class="site-logo-dot"></div>
+        Chronicle
+      </a>
+      <nav class="site-nav">
+        <a href="index.html">Home</a>
+        <a href="#posts">Articles</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-text">
+        <div class="hero-kicker">
+          <span class="hero-kicker-dot"></span>
+          Est. 2024 &middot; Stories Worth Reading
+        </div>
+        <h1>Ideas That<br /><em>Move</em> You</h1>
+        <p class="hero-sub">
+          Curated writing on technology, culture, business and the world as we see it.
+          No noise, just signal.
+        </p>
+        <div class="hero-chips">
+          <div class="hero-chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+            Free to read
+          </div>
+          <div class="hero-chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            Weekly posts
+          </div>
+          <div class="hero-chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+            Editor picks
+          </div>
+        </div>
+      </div>
+
+      <a href="#" class="hero-featured" id="hero-featured">
+        <div class="hero-featured-img" id="hero-featured-img">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <path d="m3 9 4-4 4 4 4-4 4 4"/>
+            <circle cx="8.5" cy="13.5" r="1.5"/>
+          </svg>
+        </div>
+        <div class="hero-featured-body">
+          <div class="hero-featured-cat" id="hero-featured-cat">Latest Story</div>
+          <div class="hero-featured-title" id="hero-featured-title">Loading latest post...</div>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <section class="search-section">
+    <div class="search-inner">
+      <div class="search-input-wrap">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input id="search-input" class="search-input" type="search" placeholder="Search stories..." />
+      </div>
+      <select id="category-filter" class="filter-select">
+        <option value="">All Categories</option>
+        <option value="Technology">Technology</option>
+        <option value="Culture">Culture</option>
+        <option value="Health">Health</option>
+        <option value="Business">Business</option>
+        <option value="Science">Science</option>
+        <option value="General">General</option>
+      </select>
+    </div>
+  </section>
+
+  <main class="main-content" id="posts">
+    <div class="section-header">
+      <h2 class="section-title">All Stories</h2>
+      <span class="section-count" id="post-count"></span>
+    </div>
+    <div id="posts-grid" class="posts-grid"></div>
+    <div id="pagination" class="pagination"></div>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; 2024 <strong>The Chronicle</strong> &mdash; All rights reserved.</p>
+  </footer>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
