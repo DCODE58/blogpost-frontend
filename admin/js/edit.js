@@ -33,21 +33,55 @@ function showToast(msg, type = 'info') {
   setTimeout(() => t.className = 'toast', 3200);
 }
 
-// ── QUILL ──────────────────────────────────────────────────────────────
+// ── QUILL — register custom fonts & sizes ─────────────────────────────
+const Font = Quill.import('formats/font');
+Font.whitelist = ['serif', 'monospace', 'playfair', 'georgia', 'courier'];
+Quill.register(Font, true);
+
+const Size = Quill.import('attributors/style/size');
+Size.whitelist = ['10px', '12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px', '36px', '48px'];
+Quill.register(Size, true);
+
+// ── QUILL — init ───────────────────────────────────────────────────────
 const quill = new Quill('#quill-editor', {
   theme: 'snow',
   placeholder: 'Write your story here...',
   modules: {
-    toolbar: [
-      [{ header: [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      ['blockquote', 'code-block'],
-      [{ list: 'ordered' }, { list: 'bullet' }],
-      ['link', 'image'],
-      ['clean'],
-    ],
+    toolbar: {
+      container: [
+        // Row 1 — font family + size + heading
+        [{ font: Font.whitelist }, { size: Size.whitelist }, { header: [1, 2, 3, 4, false] }],
+        // Row 2 — inline formatting
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ script: 'sub' }, { script: 'super' }],
+        // Row 3 — colour
+        [{ color: [] }, { background: [] }],
+        // Row 4 — alignment + indent
+        [{ align: [] }, { indent: '-1' }, { indent: '+1' }],
+        // Row 5 — blocks
+        ['blockquote', 'code-block'],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        // Row 6 — media + clean
+        ['link', 'image', 'video'],
+        ['clean'],
+      ],
+    },
   },
 });
+
+// ── WORD COUNT ─────────────────────────────────────────────────────────
+function updateWordCount() {
+  const text  = quill.getText().trim();
+  const words = text.length === 0 ? 0 : text.split(/\s+/).filter(Boolean).length;
+  const chars = text.length;
+  const mins  = Math.max(1, Math.ceil(words / 200));
+
+  document.getElementById('word-count').textContent = words.toLocaleString();
+  document.getElementById('char-count').textContent = chars.toLocaleString();
+  document.getElementById('read-time').textContent  = mins;
+}
+
+quill.on('text-change', updateWordCount);
 
 // ── STATUS TOGGLE ──────────────────────────────────────────────────────
 document.querySelectorAll('.toggle-btn').forEach(btn => {
@@ -99,6 +133,7 @@ async function loadPost() {
     setStatus(post.status || 'draft');
 
     quill.root.innerHTML = post.content || '';
+    updateWordCount();
 
     // Image preview
     if (post.image_url) {
