@@ -19,7 +19,7 @@ function showToast(msg, type = 'info') {
 
 // ── QUILL — register custom fonts & sizes ─────────────────────────────
 const Font = Quill.import('formats/font');
-Font.whitelist = ['sans-serif', 'serif', 'monospace', 'playfair', 'georgia', 'courier'];
+Font.whitelist = ['serif', 'monospace', 'playfair', 'georgia', 'courier'];
 Quill.register(Font, true);
 
 const Size = Quill.import('attributors/style/size');
