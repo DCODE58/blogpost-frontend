@@ -1,3 +1,5 @@
+// ── NO AUTH — admin is open access ────────────────────────────────────
+const username = localStorage.getItem('admin_username') || 'Admin';
 
 // ── SIDEBAR TOGGLE (mobile) ────────────────────────────────────────────
 function toggleSidebar() {
@@ -13,9 +15,9 @@ function closeSidebar() {
 document.getElementById('user-name').textContent   = username;
 document.getElementById('user-avatar').textContent = username.charAt(0).toUpperCase();
 
-// ── AUTH HEADERS ───────────────────────────────────────────────────────
-function authHeaders() {
-  return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+// ── JSON HEADERS (no auth token) ───────────────────────────────────────
+function jsonHeaders() {
+  return { 'Content-Type': 'application/json' };
 }
 
 // ── TOAST ──────────────────────────────────────────────────────────────
@@ -38,17 +40,15 @@ let debounce;
 
 // ── FETCH ALL POSTS ────────────────────────────────────────────────────
 async function fetchPosts() {
-  const search   = document.getElementById('filter-search').value.trim();
-  const status   = document.getElementById('filter-status').value;
+  const search = document.getElementById('filter-search').value.trim();
+  const status = document.getElementById('filter-status').value;
 
   const params = new URLSearchParams({ limit: 100, ...(search && { search }), ...(status && { status }) });
 
   try {
-    const res  = await fetch(`${window.API_BASE}/posts/admin/all?${params}`, { headers: authHeaders() });
-
-    if (res.status === 401) { localStorage.clear(); window.location.href = 'login.html'; return; }
-
+    const res  = await fetch(`${window.API_BASE}/posts/admin/all?${params}`, { headers: jsonHeaders() });
     const data = await res.json();
+
     posts = data.posts || [];
 
     // Stats
@@ -98,7 +98,7 @@ function renderTable(list) {
           </svg>
           Edit
         </a>
-        <button class="btn btn-danger btn-sm" onclick="confirmDelete(${p.id}, '${p.title.replace(/'/g,"\\'")}')">
+        <button class="btn btn-danger btn-sm" onclick="confirmDelete(${p.id}, '${p.title.replace(/'/g, "\\'")}')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="3 6 5 6 21 6"/>
             <path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
@@ -129,7 +129,7 @@ document.getElementById('modal-confirm').onclick = async () => {
   try {
     const res = await fetch(`${window.API_BASE}/posts/${deleteTarget}`, {
       method: 'DELETE',
-      headers: authHeaders(),
+      headers: jsonHeaders(),
     });
 
     if (!res.ok) throw new Error();
@@ -145,10 +145,10 @@ document.getElementById('modal-confirm').onclick = async () => {
   }
 };
 
-// ── LOGOUT ─────────────────────────────────────────────────────────────
+// ── LOGOUT (clears stored name only) ───────────────────────────────────
 document.getElementById('logout-btn').onclick = () => {
   localStorage.clear();
-  window.location.href = 'login.html';
+  window.location.reload();
 };
 
 // ── FILTER EVENTS ──────────────────────────────────────────────────────
