@@ -1,11 +1,8 @@
-// ── AUTH ───────────────────────────────────────────────────────────────
-const token = localStorage.getItem('admin_token');
-if (!token) window.location.href = 'login.html';
-
+// ── NO AUTH — token guard removed ─────────────────────────────────────
 const username = localStorage.getItem('admin_username') || 'Admin';
 document.getElementById('user-name').textContent   = username;
 document.getElementById('user-avatar').textContent = username.charAt(0).toUpperCase();
-document.getElementById('logout-btn').onclick = () => { localStorage.clear(); window.location.href = 'login.html'; };
+document.getElementById('logout-btn').onclick = () => { localStorage.clear(); window.location.reload(); };
 
 // ── SIDEBAR TOGGLE (mobile) ────────────────────────────────────────────
 function toggleSidebar() {
@@ -117,11 +114,8 @@ document.getElementById('post-image').addEventListener('input', (e) => {
 // ── LOAD POST ──────────────────────────────────────────────────────────
 async function loadPost() {
   try {
-    const res = await fetch(`${window.API_BASE}/posts/admin/${postId}`, {
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
+    const res = await fetch(`${window.API_BASE}/posts/admin/${postId}`);
 
-    if (res.status === 401) { localStorage.clear(); window.location.href = 'login.html'; return; }
     if (!res.ok) throw new Error('Post not found');
 
     const post = await res.json();
@@ -149,7 +143,7 @@ async function loadPost() {
       link.style.display = 'inline-flex';
     }
 
-    document.getElementById('loading-overlay').style.display = 'none';
+    document.getElementById('loading-overlay').style.display  = 'none';
     document.getElementById('editor-container').style.display = 'block';
 
   } catch (err) {
@@ -173,14 +167,14 @@ async function updatePost() {
   errBox.style.display = 'none';
 
   if (!title || title.length < 3) {
-    errBox.textContent  = 'Title is required (at least 3 characters).';
+    errBox.textContent   = 'Title is required (at least 3 characters).';
     errBox.style.display = 'block';
     document.getElementById('post-title').focus();
     return;
   }
 
   if (!content || quill.getText().trim().length < 10) {
-    errBox.textContent  = 'Content is required.';
+    errBox.textContent   = 'Content is required.';
     errBox.style.display = 'block';
     return;
   }
@@ -193,28 +187,23 @@ async function updatePost() {
   try {
     const res = await fetch(`${window.API_BASE}/posts/${postId}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title, content, image_url: image_url || null, category, status }),
     });
-
-    if (res.status === 401) { localStorage.clear(); window.location.href = 'login.html'; return; }
 
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Update failed');
 
     showToast('Post updated successfully!', 'success');
 
-    // Update preview link
+    // Update preview link if now published
     if (status === 'published') {
       const link = document.getElementById('preview-link');
       link.href = `../post.html?id=${postId}`;
       link.style.display = 'inline-flex';
     }
   } catch (err) {
-    errBox.textContent  = err.message || 'Something went wrong.';
+    errBox.textContent   = err.message || 'Something went wrong.';
     errBox.style.display = 'block';
   } finally {
     ['update-btn', 'update-btn-2'].forEach(id => {
