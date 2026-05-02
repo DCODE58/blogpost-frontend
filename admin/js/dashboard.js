@@ -1,7 +1,4 @@
-// ── NO AUTH — admin is open access ────────────────────────────────────
-const username = localStorage.getItem('admin_username') || 'Admin';
-
-// ── SIDEBAR TOGGLE (mobile) ────────────────────────────────────────────
+// ── SIDEBAR TOGGLE ─────────────────────────────────────────────────────
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebar-overlay').classList.toggle('open');
@@ -9,15 +6,6 @@ function toggleSidebar() {
 function closeSidebar() {
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('sidebar-overlay').classList.remove('open');
-}
-
-// ── INIT USER UI ───────────────────────────────────────────────────────
-document.getElementById('user-name').textContent   = username;
-document.getElementById('user-avatar').textContent = username.charAt(0).toUpperCase();
-
-// ── JSON HEADERS (no auth token) ───────────────────────────────────────
-function jsonHeaders() {
-  return { 'Content-Type': 'application/json' };
 }
 
 // ── TOAST ──────────────────────────────────────────────────────────────
@@ -28,136 +16,120 @@ function showToast(msg, type = 'info') {
   setTimeout(() => t.className = 'toast', 3200);
 }
 
-// ── DATE FORMAT ────────────────────────────────────────────────────────
-function fmtDate(iso) {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+// ── QUILL ──────────────────────────────────────────────────────────────
+const Font = Quill.import('formats/font');
+Font.whitelist = ['serif', 'monospace', 'playfair', 'georgia', 'courier'];
+Quill.register(Font, true);
+
+const Size = Quill.import('attributors/style/size');
+Size.whitelist = ['10px','12px','14px','16px','18px','20px','24px','28px','32px','36px','48px'];
+Quill.register(Size, true);
+
+const quill = new Quill('#quill-editor', {
+  theme: 'snow',
+  placeholder: 'Write your story here...',
+  modules: {
+    toolbar: {
+      container: [
+        [{ font: Font.whitelist }, { size: Size.whitelist }, { header: [1,2,3,4,false] }],
+        ['bold','italic','underline','strike'],
+        [{ script:'sub' }, { script:'super' }],
+        [{ color:[] }, { background:[] }],
+        [{ align:[] }, { indent:'-1' }, { indent:'+1' }],
+        ['blockquote','code-block'],
+        [{ list:'ordered' }, { list:'bullet' }],
+        ['link','image','video'],
+        ['clean'],
+      ],
+    },
+  },
+});
+
+// ── WORD COUNT ─────────────────────────────────────────────────────────
+function updateWordCount() {
+  const text  = quill.getText().trim();
+  const words = text.length === 0 ? 0 : text.split(/\s+/).filter(Boolean).length;
+  document.getElementById('word-count').textContent = words.toLocaleString();
+  document.getElementById('char-count').textContent = text.length.toLocaleString();
+  document.getElementById('read-time').textContent  = Math.max(1, Math.ceil(words / 200));
 }
+quill.on('text-change', updateWordCount);
 
-// ── STATE ──────────────────────────────────────────────────────────────
-let posts        = [];
-let deleteTarget = null;
-let debounce;
+// ── STATUS TOGGLE ──────────────────────────────────────────────────────
+document.querySelectorAll('.toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('post-status').value = btn.dataset.status;
+  });
+});
 
-// ── FETCH ALL POSTS ────────────────────────────────────────────────────
-async function fetchPosts() {
-  const search = document.getElementById('filter-search').value.trim();
-  const status = document.getElementById('filter-status').value;
-
-  const params = new URLSearchParams({ limit: 100, ...(search && { search }), ...(status && { status }) });
-
-  try {
-    const res  = await fetch(`${window.API_BASE}/posts/admin/all?${params}`, { headers: jsonHeaders() });
-    const data = await res.json();
-
-    posts = data.posts || [];
-
-    // Stats
-    const s = data.stats || {};
-    document.getElementById('stat-published').textContent = s.published || 0;
-    document.getElementById('stat-draft').textContent     = s.draft     || 0;
-    document.getElementById('stat-views').textContent     = Number(s.total_views || 0).toLocaleString();
-
-    renderTable(posts);
-  } catch {
-    showToast('Failed to load posts', 'error');
+// ── IMAGE PREVIEW ──────────────────────────────────────────────────────
+document.getElementById('post-image').addEventListener('input', (e) => {
+  const url     = e.target.value.trim();
+  const preview = document.getElementById('image-preview');
+  const img     = document.getElementById('preview-img');
+  if (url && url.startsWith('http')) {
+    img.src     = url;
+    img.onload  = () => preview.classList.add('visible');
+    img.onerror = () => preview.classList.remove('visible');
+  } else {
+    preview.classList.remove('visible');
   }
-}
+});
 
-// ── RENDER TABLE ───────────────────────────────────────────────────────
-function renderTable(list) {
-  const tbody = document.getElementById('posts-tbody');
+// ── SUBMIT ─────────────────────────────────────────────────────────────
+async function submitPost(statusOverride) {
+  const title     = document.getElementById('post-title').value.trim();
+  const content   = quill.root.innerHTML.trim();
+  const image_url = document.getElementById('post-image').value.trim();
+  const category  = document.getElementById('post-category').value;
+  const status    = statusOverride || document.getElementById('post-status').value;
+  const errBox    = document.getElementById('form-error');
 
-  if (!list.length) {
-    tbody.innerHTML = `
-      <tr><td colspan="6" class="table-empty">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586l5.414 5.414V19a2 2 0 0 1-2 2z"/>
-        </svg>
-        <p>No posts found</p>
-      </td></tr>`;
+  errBox.style.display = 'none';
+
+  if (!title || title.length < 3) {
+    errBox.textContent   = 'Title is required (at least 3 characters).';
+    errBox.style.display = 'block';
+    document.getElementById('post-title').focus();
+    return;
+  }
+  if (!content || quill.getText().trim().length < 10) {
+    errBox.textContent   = 'Content is required (write at least a few words).';
+    errBox.style.display = 'block';
     return;
   }
 
-  tbody.innerHTML = list.map(p => `
-    <tr>
-      <td class="td-title" title="${p.title}">${p.title}</td>
-      <td>${p.category || 'General'}</td>
-      <td>
-        <span class="badge badge-${p.status}">
-          <span class="badge-dot"></span>
-          ${p.status}
-        </span>
-      </td>
-      <td>${p.views}</td>
-      <td>${fmtDate(p.created_at)}</td>
-      <td class="td-actions">
-        <a href="edit.html?id=${p.id}" class="btn btn-secondary btn-sm">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>
-          Edit
-        </a>
-        <button class="btn btn-danger btn-sm" onclick="confirmDelete(${p.id}, '${p.title.replace(/'/g, "\\'")}')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
-          </svg>
-          Delete
-        </button>
-      </td>
-    </tr>`).join('');
-}
-
-// ── DELETE ─────────────────────────────────────────────────────────────
-function confirmDelete(id, title) {
-  deleteTarget = id;
-  document.getElementById('modal-post-title').textContent = title;
-  document.getElementById('delete-modal').classList.add('open');
-}
-
-document.getElementById('modal-cancel').onclick = () => {
-  document.getElementById('delete-modal').classList.remove('open');
-  deleteTarget = null;
-};
-
-document.getElementById('modal-confirm').onclick = async () => {
-  if (!deleteTarget) return;
-  const btn = document.getElementById('modal-confirm');
-  btn.classList.add('loading');
+  const allBtns = ['publish-btn','save-draft-btn','publish-btn-2','save-draft-btn-2'];
+  allBtns.forEach(id => {
+    const b = document.getElementById(id);
+    if (b) { b.classList.add('loading'); b.disabled = true; }
+  });
 
   try {
-    const res = await fetch(`${window.API_BASE}/posts/${deleteTarget}`, {
-      method: 'DELETE',
-      headers: jsonHeaders(),
+    const res = await fetch(`${window.API_BASE}/posts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, content, image_url: image_url || null, category, status }),
     });
 
-    if (!res.ok) throw new Error();
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to save');
 
-    document.getElementById('delete-modal').classList.remove('open');
-    deleteTarget = null;
-    showToast('Post deleted', 'success');
-    fetchPosts();
-  } catch {
-    showToast('Failed to delete post', 'error');
-  } finally {
-    btn.classList.remove('loading');
+    showToast(`Post ${status === 'published' ? 'published' : 'saved as draft'}!`, 'success');
+    setTimeout(() => window.location.href = 'dashboard.html', 1200);
+  } catch (err) {
+    errBox.textContent   = err.message || 'Something went wrong.';
+    errBox.style.display = 'block';
+    allBtns.forEach(id => {
+      const b = document.getElementById(id);
+      if (b) { b.classList.remove('loading'); b.disabled = false; }
+    });
   }
-};
+}
 
-// ── LOGOUT (clears stored name only) ───────────────────────────────────
-document.getElementById('logout-btn').onclick = () => {
-  localStorage.clear();
-  window.location.reload();
-};
-
-// ── FILTER EVENTS ──────────────────────────────────────────────────────
-document.getElementById('filter-search').addEventListener('input', () => {
-  clearTimeout(debounce);
-  debounce = setTimeout(fetchPosts, 350);
-});
-
-document.getElementById('filter-status').addEventListener('change', fetchPosts);
-
-// ── INIT ───────────────────────────────────────────────────────────────
-fetchPosts();
+document.getElementById('publish-btn').onclick        = () => submitPost('published');
+document.getElementById('save-draft-btn').onclick     = () => submitPost('draft');
+document.getElementById('publish-btn-2').onclick      = () => submitPost('published');
+document.getElementById('save-draft-btn-2').onclick   = () => submitPost('draft');
