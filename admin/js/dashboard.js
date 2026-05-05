@@ -1,4 +1,12 @@
-// ── SIDEBAR TOGGLE ─────────────────────────────────────────────────────
+// v3 — no token, visible errors, version-stamped for cache verification
+console.log('[dashboard.js] v3 loaded — token-free build');
+
+// ── USER ───────────────────────────────────────────────────────────────
+const username = localStorage.getItem('admin_username') || 'Admin';
+document.getElementById('user-name').textContent   = username;
+document.getElementById('user-avatar').textContent = username.charAt(0).toUpperCase();
+
+// ── SIDEBAR ────────────────────────────────────────────────────────────
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebar-overlay').classList.toggle('open');
@@ -16,120 +24,167 @@ function showToast(msg, type = 'info') {
   setTimeout(() => t.className = 'toast', 3200);
 }
 
-// ── QUILL ──────────────────────────────────────────────────────────────
-const Font = Quill.import('formats/font');
-Font.whitelist = ['serif', 'monospace', 'playfair', 'georgia', 'courier'];
-Quill.register(Font, true);
-
-const Size = Quill.import('attributors/style/size');
-Size.whitelist = ['10px','12px','14px','16px','18px','20px','24px','28px','32px','36px','48px'];
-Quill.register(Size, true);
-
-const quill = new Quill('#quill-editor', {
-  theme: 'snow',
-  placeholder: 'Write your story here...',
-  modules: {
-    toolbar: {
-      container: [
-        [{ font: Font.whitelist }, { size: Size.whitelist }, { header: [1,2,3,4,false] }],
-        ['bold','italic','underline','strike'],
-        [{ script:'sub' }, { script:'super' }],
-        [{ color:[] }, { background:[] }],
-        [{ align:[] }, { indent:'-1' }, { indent:'+1' }],
-        ['blockquote','code-block'],
-        [{ list:'ordered' }, { list:'bullet' }],
-        ['link','image','video'],
-        ['clean'],
-      ],
-    },
-  },
-});
-
-// ── WORD COUNT ─────────────────────────────────────────────────────────
-function updateWordCount() {
-  const text  = quill.getText().trim();
-  const words = text.length === 0 ? 0 : text.split(/\s+/).filter(Boolean).length;
-  document.getElementById('word-count').textContent = words.toLocaleString();
-  document.getElementById('char-count').textContent = text.length.toLocaleString();
-  document.getElementById('read-time').textContent  = Math.max(1, Math.ceil(words / 200));
+// ── HELPERS ────────────────────────────────────────────────────────────
+function fmtDate(iso) {
+  return new Date(iso).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric'
+  });
 }
-quill.on('text-change', updateWordCount);
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function escAttr(str) {
+  return String(str).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+}
 
-// ── STATUS TOGGLE ──────────────────────────────────────────────────────
-document.querySelectorAll('.toggle-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('post-status').value = btn.dataset.status;
-  });
-});
+// ── STATE ──────────────────────────────────────────────────────────────
+let deleteTarget = null;
+let debounce;
 
-// ── IMAGE PREVIEW ──────────────────────────────────────────────────────
-document.getElementById('post-image').addEventListener('input', (e) => {
-  const url     = e.target.value.trim();
-  const preview = document.getElementById('image-preview');
-  const img     = document.getElementById('preview-img');
-  if (url && url.startsWith('http')) {
-    img.src     = url;
-    img.onload  = () => preview.classList.add('visible');
-    img.onerror = () => preview.classList.remove('visible');
-  } else {
-    preview.classList.remove('visible');
-  }
-});
+// ── RENDER TABLE ───────────────────────────────────────────────────────
+function renderTable(posts) {
+  const tbody = document.getElementById('posts-tbody');
 
-// ── SUBMIT ─────────────────────────────────────────────────────────────
-async function submitPost(statusOverride) {
-  const title     = document.getElementById('post-title').value.trim();
-  const content   = quill.root.innerHTML.trim();
-  const image_url = document.getElementById('post-image').value.trim();
-  const category  = document.getElementById('post-category').value;
-  const status    = statusOverride || document.getElementById('post-status').value;
-  const errBox    = document.getElementById('form-error');
-
-  errBox.style.display = 'none';
-
-  if (!title || title.length < 3) {
-    errBox.textContent   = 'Title is required (at least 3 characters).';
-    errBox.style.display = 'block';
-    document.getElementById('post-title').focus();
-    return;
-  }
-  if (!content || quill.getText().trim().length < 10) {
-    errBox.textContent   = 'Content is required (write at least a few words).';
-    errBox.style.display = 'block';
+  if (!posts.length) {
+    tbody.innerHTML = `
+      <tr><td colspan="6" class="table-empty" style="padding:2rem">
+        <p>No posts found. <a href="create.html">Create your first post →</a></p>
+      </td></tr>`;
     return;
   }
 
-  const allBtns = ['publish-btn','save-draft-btn','publish-btn-2','save-draft-btn-2'];
-  allBtns.forEach(id => {
-    const b = document.getElementById(id);
-    if (b) { b.classList.add('loading'); b.disabled = true; }
-  });
+  tbody.innerHTML = posts.map(p => `
+    <tr>
+      <td class="td-title" title="${escAttr(p.title)}">${escHtml(p.title)}</td>
+      <td>${escHtml(p.category || 'General')}</td>
+      <td>
+        <span class="badge badge-${p.status}">
+          <span class="badge-dot"></span>${p.status}
+        </span>
+      </td>
+      <td>${Number(p.views || 0).toLocaleString()}</td>
+      <td>${fmtDate(p.created_at)}</td>
+      <td class="td-actions">
+        <a href="edit.html?id=${p.id}" class="btn btn-secondary btn-sm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+          Edit
+        </a>
+        <button class="btn btn-danger btn-sm"
+          onclick="confirmDelete(${p.id}, '${escAttr(p.title)}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14H6L5 6"/>
+            <path d="M10 11v6M14 11v6"/>
+            <path d="M9 6V4h6v2"/>
+          </svg>
+          Delete
+        </button>
+      </td>
+    </tr>`).join('');
+}
+
+// ── FETCH POSTS ────────────────────────────────────────────────────────
+async function fetchPosts() {
+  const tbody  = document.getElementById('posts-tbody');
+  const search = document.getElementById('filter-search').value.trim();
+  const status = document.getElementById('filter-status').value;
+
+  tbody.innerHTML = `<tr><td colspan="6" class="table-empty" style="padding:2rem">
+    <p>Loading…</p></td></tr>`;
+
+  const params = new URLSearchParams({ limit: 100 });
+  if (search) params.set('search', search);
+  if (status) params.set('status', status);
+
+  const url = `${window.API_BASE}/posts/admin/all?${params}`;
+  console.log('[dashboard] fetching:', url);
 
   try {
-    const res = await fetch(`${window.API_BASE}/posts`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, content, image_url: image_url || null, category, status }),
-    });
-
+    const res  = await fetch(url);
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to save');
+    console.log('[dashboard] response:', res.status, data);
 
-    showToast(`Post ${status === 'published' ? 'published' : 'saved as draft'}!`, 'success');
-    setTimeout(() => window.location.href = 'dashboard.html', 1200);
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+    const posts = data.posts || [];
+    const s     = data.stats  || {};
+
+    document.getElementById('stat-published').textContent =
+      Number(s.published   || 0).toLocaleString();
+    document.getElementById('stat-draft').textContent =
+      Number(s.draft       || 0).toLocaleString();
+    document.getElementById('stat-views').textContent =
+      Number(s.total_views || 0).toLocaleString();
+
+    renderTable(posts);
+
   } catch (err) {
-    errBox.textContent   = err.message || 'Something went wrong.';
-    errBox.style.display = 'block';
-    allBtns.forEach(id => {
-      const b = document.getElementById(id);
-      if (b) { b.classList.remove('loading'); b.disabled = false; }
-    });
+    console.error('[dashboard] fetchPosts failed:', err);
+    tbody.innerHTML = `
+      <tr><td colspan="6" class="table-empty" style="padding:2rem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+             width="32" height="32" style="margin-bottom:0.5rem">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <p style="font-weight:600">Failed to load posts</p>
+        <p style="font-size:0.8rem;opacity:0.6;margin-top:0.2rem">${escHtml(err.message)}</p>
+        <button class="btn btn-secondary btn-sm"
+          onclick="fetchPosts()" style="margin-top:1rem">Retry</button>
+      </td></tr>`;
   }
 }
 
-document.getElementById('publish-btn').onclick        = () => submitPost('published');
-document.getElementById('save-draft-btn').onclick     = () => submitPost('draft');
-document.getElementById('publish-btn-2').onclick      = () => submitPost('published');
-document.getElementById('save-draft-btn-2').onclick   = () => submitPost('draft');
+// ── DELETE ─────────────────────────────────────────────────────────────
+function confirmDelete(id, title) {
+  deleteTarget = id;
+  document.getElementById('modal-post-title').textContent = title;
+  document.getElementById('delete-modal').classList.add('open');
+}
+
+document.getElementById('modal-cancel').onclick = () => {
+  document.getElementById('delete-modal').classList.remove('open');
+  deleteTarget = null;
+};
+
+document.getElementById('modal-confirm').onclick = async () => {
+  if (!deleteTarget) return;
+  const btn = document.getElementById('modal-confirm');
+  btn.classList.add('loading');
+  try {
+    const res = await fetch(`${window.API_BASE}/posts/${deleteTarget}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) throw new Error('Delete failed');
+    document.getElementById('delete-modal').classList.remove('open');
+    deleteTarget = null;
+    showToast('Post deleted', 'success');
+    fetchPosts();
+  } catch {
+    showToast('Failed to delete post', 'error');
+  } finally {
+    btn.classList.remove('loading');
+  }
+};
+
+// ── LOGOUT ─────────────────────────────────────────────────────────────
+document.getElementById('logout-btn').onclick = () => {
+  localStorage.clear();
+  window.location.reload();
+};
+
+// ── FILTER EVENTS ──────────────────────────────────────────────────────
+document.getElementById('filter-search').addEventListener('input', () => {
+  clearTimeout(debounce);
+  debounce = setTimeout(fetchPosts, 350);
+});
+document.getElementById('filter-status').addEventListener('change', fetchPosts);
+
+// ── INIT ───────────────────────────────────────────────────────────────
+fetchPosts();
