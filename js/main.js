@@ -19,18 +19,36 @@ function stripHtml(html) {
   return d.textContent || d.innerText || '';
 }
 
-// Cycle through pastel colours for category pills
-const PILL_COLOURS = [
-  'var(--card-yellow)',
-  'var(--card-pink)',
-  'var(--card-sage)',
-  'var(--card-sky)',
-];
+/**
+ * Trim excerpt at nearest word boundary — never cuts mid-word.
+ */
+function smartExcerpt(html, maxLen = 155) {
+  const plain = stripHtml(html).replace(/\s+/g, ' ').trim();
+  if (plain.length <= maxLen) return plain;
+  const cut = plain.lastIndexOf(' ', maxLen);
+  return plain.slice(0, cut > 0 ? cut : maxLen) + '…';
+}
 
+const PILL_COLOURS = [
+  'var(--card-yellow)', 'var(--card-pink)',
+  'var(--card-sage)',   'var(--card-sky)',
+];
 function pillColour(category) {
   let hash = 0;
   for (let i = 0; i < category.length; i++) hash = category.charCodeAt(i) + ((hash << 5) - hash);
   return PILL_COLOURS[Math.abs(hash) % PILL_COLOURS.length];
+}
+
+// ── SEO ────────────────────────────────────────────────────────────────
+function setMeta(title, description) {
+  document.title = title;
+  let meta = document.querySelector('meta[name="description"]');
+  if (!meta) {
+    meta = document.createElement('meta');
+    meta.setAttribute('name', 'description');
+    document.head.appendChild(meta);
+  }
+  meta.setAttribute('content', description);
 }
 
 // ── STATE ──────────────────────────────────────────────────────────────
@@ -38,6 +56,11 @@ let currentPage     = 1;
 let currentSearch   = '';
 let currentCategory = '';
 let debounceTimer;
+
+setMeta(
+  'The Chronicle — Latest Stories',
+  'Discover in-depth articles, opinions and stories on business, culture and more.'
+);
 
 // ── HERO FEATURED ──────────────────────────────────────────────────────
 async function loadHeroFeatured() {
@@ -52,19 +75,17 @@ async function loadHeroFeatured() {
     link.href  = 'post.html?id=' + p.id;
 
     const imgWrap = document.getElementById('hero-featured-img');
-    if (p.image_url) {
+    if (p.image_url)
       imgWrap.innerHTML = '<img src="' + p.image_url + '" alt="' + p.title + '" />';
-    }
 
     document.getElementById('hero-featured-cat').textContent   = p.category || 'General';
     document.getElementById('hero-featured-title').textContent = p.title;
-  } catch (_) { /* silent */ }
+  } catch (_) { /* silent — hero is decorative */ }
 }
 
 // ── SKELETON ───────────────────────────────────────────────────────────
 function showSkeleton() {
-  const grid = document.getElementById('posts-grid');
-  grid.innerHTML = Array(6).fill(0).map(() => `
+  document.getElementById('posts-grid').innerHTML = Array(6).fill(0).map(() => `
     <div class="post-card" style="pointer-events:none">
       <div class="post-card-image">
         <div class="skeleton" style="width:100%;height:100%"></div>
@@ -91,18 +112,21 @@ function renderPosts(posts) {
           <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/>
         </svg>
         <h3>No stories found</h3>
-        <p>Try a different search or category.</p>
+        <p>${currentSearch ? 'Try a different search term.' : currentCategory ? 'No posts in this category yet.' : 'No published posts yet.'}</p>
       </div>`;
     return;
   }
 
-  grid.innerHTML = posts.map(function(post) {
-    const excerpt = stripHtml(post.excerpt || post.content || '').slice(0, 155) + '...';
-    const colour  = pillColour(post.category || 'General');
-
+  grid.innerHTML = posts.map(post => {
+    const excerpt  = smartExcerpt(post.excerpt || post.content || '');
+    const colour   = pillColour(post.category || 'General');
     const imageHtml = post.image_url
-      ? '<img src="' + post.image_url + '" alt="' + post.title + '" loading="lazy" />'
-      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="m3 9 4-4 4 4 4-4 4 4"/><circle cx="8.5" cy="13.5" r="1.5"/></svg>';
+      ? `<img src="${post.image_url}" alt="${post.title}" loading="lazy" />`
+      : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+           <rect x="3" y="3" width="18" height="18" rx="2"/>
+           <path d="m3 9 4-4 4 4 4-4 4 4"/>
+           <circle cx="8.5" cy="13.5" r="1.5"/>
+         </svg>`;
 
     return `
       <article class="post-card">
@@ -110,9 +134,7 @@ function renderPosts(posts) {
           ${imageHtml}
         </a>
         <div class="post-card-body">
-          <span class="post-card-category" style="background:${colour}">
-            ${post.category || 'General'}
-          </span>
+          <span class="post-card-category" style="background:${colour}">${post.category || 'General'}</span>
           <a href="post.html?id=${post.id}">
             <h2 class="post-card-title">${post.title}</h2>
           </a>
@@ -122,9 +144,10 @@ function renderPosts(posts) {
               <span class="post-card-date">${formatDate(post.created_at)}</span>
               <span class="post-card-views">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
                 </svg>
-                ${post.views} views
+                ${Number(post.views).toLocaleString()} views
               </span>
             </div>
             <a href="post.html?id=${post.id}" class="read-more">
@@ -146,11 +169,10 @@ function renderPagination(total, page, limit) {
   if (pages <= 1) { pag.innerHTML = ''; return; }
 
   let html = '';
-  if (page > 1) html += '<button class="page-btn" onclick="goPage(' + (page - 1) + ')">&larr; Prev</button>';
-  for (let i = 1; i <= pages; i++) {
-    html += '<button class="page-btn' + (i === page ? ' active' : '') + '" onclick="goPage(' + i + ')">' + i + '</button>';
-  }
-  if (page < pages) html += '<button class="page-btn" onclick="goPage(' + (page + 1) + ')">Next &rarr;</button>';
+  if (page > 1)     html += `<button class="page-btn" onclick="goPage(${page-1})">&larr; Prev</button>`;
+  for (let i = 1; i <= pages; i++)
+    html += `<button class="page-btn${i === page ? ' active' : ''}" onclick="goPage(${i})">${i}</button>`;
+  if (page < pages) html += `<button class="page-btn" onclick="goPage(${page+1})">Next &rarr;</button>`;
   pag.innerHTML = html;
 }
 
@@ -170,17 +192,19 @@ async function fetchPosts() {
 
   try {
     const res = await fetch(window.API_BASE + '/posts?' + params.toString());
-    if (!res.ok) throw new Error('Failed');
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
     const data = await res.json();
 
     renderPosts(data.posts || []);
     renderPagination(data.total || 0, data.page || 1, data.limit || 9);
 
     const count = document.getElementById('post-count');
-    if (count) count.textContent = data.total + ' article' + (data.total !== 1 ? 's' : '');
-
-  } catch (_) {
-    showToast('Could not load posts. Is the backend running?', 'error');
+    if (count) {
+      const n = data.total || 0;
+      count.textContent = n + ' article' + (n !== 1 ? 's' : '');
+    }
+  } catch (err) {
+    document.getElementById('pagination').innerHTML = '';
     document.getElementById('posts-grid').innerHTML = `
       <div class="empty-state">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -190,7 +214,13 @@ async function fetchPosts() {
         </svg>
         <h3>Unable to load stories</h3>
         <p>Please check your connection or try again later.</p>
+        <button onclick="fetchPosts()" style="margin-top:1rem;padding:0.5rem 1.2rem;
+          border:1.5px solid var(--border-light);border-radius:8px;background:none;
+          cursor:pointer;font-family:var(--font-ui);font-size:0.85rem">
+          Retry
+        </button>
       </div>`;
+    showToast('Could not load posts — ' + err.message, 'error');
   }
 }
 
