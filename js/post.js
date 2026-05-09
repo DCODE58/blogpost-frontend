@@ -1,3 +1,24 @@
+// ── View deduplication (client-side) ───────────────────────────────────
+// Check localStorage before firing the view endpoint.
+// The same device will not count as a new view for 90 days.
+var VIEW_WINDOW_MS = 90 * 24 * 60 * 60 * 1000;
+
+function hasViewedRecently(postId) {
+  try {
+    var ts = localStorage.getItem('view_' + postId);
+    if (!ts) return false;
+    return (Date.now() - parseInt(ts, 10)) < VIEW_WINDOW_MS;
+  } catch (_) {
+    return false; // private browsing / storage blocked — allow the call
+  }
+}
+
+function markViewed(postId) {
+  try {
+    localStorage.setItem('view_' + postId, Date.now().toString());
+  } catch (_) {}
+}
+
 function showToast(msg, type) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -161,8 +182,12 @@ async function loadPost() {
       imgHtml +
       '<div class="post-content">' + post.content + '</div>';
 
-    // Increment view (fire-and-forget, deduplicated server-side by IP)
-    fetch(window.API_BASE + '/posts/' + id + '/view', { method: 'POST' }).catch(function() {});
+    // Only count a view if this device hasn't viewed this post in 90 days.
+    // localStorage is the first gate; the server-side IP hash is the second.
+    if (!hasViewedRecently(id)) {
+      markViewed(id);
+      fetch(window.API_BASE + '/posts/' + id + '/view', { method: 'POST' }).catch(function() {});
+    }
 
   } catch (_) {
     document.title = 'Error — The Chronicle';
