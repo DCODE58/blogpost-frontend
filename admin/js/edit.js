@@ -1,8 +1,10 @@
+// ── Auth / user ───────────────────────────────────────────────────────
 const username = localStorage.getItem('admin_username') || 'Admin';
 document.getElementById('user-name').textContent   = username;
 document.getElementById('user-avatar').textContent = username.charAt(0).toUpperCase();
 document.getElementById('logout-btn').onclick = () => { localStorage.clear(); window.location.reload(); };
 
+// ── Sidebar ───────────────────────────────────────────────────────────
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebar-overlay').classList.toggle('open');
@@ -12,11 +14,13 @@ function closeSidebar() {
   document.getElementById('sidebar-overlay').classList.remove('open');
 }
 
+// ── Post ID ───────────────────────────────────────────────────────────
 const params = new URLSearchParams(window.location.search);
 const postId = params.get('id');
 if (!postId || isNaN(postId)) window.location.href = 'dashboard.html';
 document.getElementById('post-id-badge').textContent = `#${postId}`;
 
+// ── Toast ─────────────────────────────────────────────────────────────
 function showToast(msg, type = 'info') {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -24,59 +28,22 @@ function showToast(msg, type = 'info') {
   setTimeout(() => t.className = 'toast', 3200);
 }
 
-const Font = Quill.import('formats/font');
-Font.whitelist = ['serif','monospace','playfair','georgia','courier'];
-Quill.register(Font, true);
+// ── Init TipTap editor ────────────────────────────────────────────────
+const editor = initEditor('editor-wrap', 'Write your story here…');
 
-const Size = Quill.import('attributors/style/size');
-Size.whitelist = ['10px','12px','14px','16px','18px','20px','24px','28px','32px','36px','48px'];
-Quill.register(Size, true);
-
-const quill = new Quill('#quill-editor', {
-  theme: 'snow',
-  placeholder: 'Write your story here...',
-  modules: {
-    toolbar: {
-      container: [
-        [{ font: Font.whitelist }, { size: Size.whitelist }, { header: [1,2,3,4,false] }],
-        ['bold','italic','underline','strike'],
-        [{ script:'sub' }, { script:'super' }],
-        [{ color:[] }, { background:[] }],
-        [{ align:[] }, { indent:'-1' }, { indent:'+1' }],
-        ['blockquote','code-block'],
-        [{ list:'ordered' }, { list:'bullet' }],
-        ['link','image','video'],
-        ['clean'],
-      ],
-    },
-  },
-});
-
-function updateWordCount() {
-  const text  = quill.getText().trim();
-  const words = text.length === 0 ? 0 : text.split(/\s+/).filter(Boolean).length;
-  document.getElementById('word-count').textContent = words.toLocaleString();
-  document.getElementById('char-count').textContent = text.length.toLocaleString();
-  document.getElementById('read-time').textContent  = Math.max(1, Math.ceil(words / 200));
-}
-quill.on('text-change', updateWordCount);
-
-document.querySelectorAll('.toggle-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('post-status').value = btn.dataset.status;
-  });
-});
-
+// ── Status toggle ─────────────────────────────────────────────────────
 function setStatus(status) {
   document.getElementById('post-status').value = status;
-  document.querySelectorAll('.toggle-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.status === status);
-  });
+  document.querySelectorAll('.toggle-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.status === status));
 }
 
-document.getElementById('post-image').addEventListener('input', (e) => {
+document.querySelectorAll('.toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => setStatus(btn.dataset.status));
+});
+
+// ── Cover image preview ───────────────────────────────────────────────
+document.getElementById('post-image').addEventListener('input', e => {
   const url     = e.target.value.trim();
   const preview = document.getElementById('image-preview');
   const img     = document.getElementById('preview-img');
@@ -89,9 +56,18 @@ document.getElementById('post-image').addEventListener('input', (e) => {
   }
 });
 
+// ── Keyboard shortcuts ────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault();
+    updatePost();
+  }
+});
+
+// ── Load post ─────────────────────────────────────────────────────────
 async function loadPost() {
   try {
-    const res  = await fetch(`${window.API_BASE}/posts/admin/${postId}`);
+    const res = await fetch(`${window.API_BASE}/posts/admin/${postId}`);
     if (!res.ok) throw new Error('Post not found');
     const post = await res.json();
 
@@ -99,34 +75,37 @@ async function loadPost() {
     document.getElementById('post-image').value    = post.image_url || '';
     document.getElementById('post-category').value = post.category  || 'General';
     setStatus(post.status || 'draft');
-    quill.root.innerHTML = post.content || '';
-    updateWordCount();
+
+    // Load content into TipTap
+    editor.commands.setContent(post.content || '');
 
     if (post.image_url) {
       const img = document.getElementById('preview-img');
       img.src   = post.image_url;
       img.onload = () => document.getElementById('image-preview').classList.add('visible');
     }
+
     if (post.status === 'published') {
       const link = document.getElementById('preview-link');
-      link.href  = `../post.html?id=${postId}`;
-      link.style.display = 'inline-flex';
+      if (link) { link.href = `../post.html?id=${postId}`; link.style.display = 'inline-flex'; }
     }
 
     document.getElementById('loading-overlay').style.display  = 'none';
     document.getElementById('editor-container').style.display = 'block';
   } catch {
-    document.getElementById('loading-overlay').innerHTML =
-      `<div style="text-align:center;color:var(--muted)">
+    document.getElementById('loading-overlay').innerHTML = `
+      <div style="text-align:center;color:var(--muted)">
         <p style="font-family:var(--font-ui);font-weight:600">Post not found.</p>
-        <a href="dashboard.html" class="btn btn-secondary" style="margin-top:1rem">Back to Dashboard</a>
+        <a href="dashboard.html" class="btn btn-secondary" style="margin-top:1rem">← Back</a>
       </div>`;
   }
 }
 
+// ── Update post ───────────────────────────────────────────────────────
 async function updatePost() {
   const title     = document.getElementById('post-title').value.trim();
-  const content   = quill.root.innerHTML.trim();
+  const content   = editor.getHTML();
+  const plainText = editor.getText().trim();
   const image_url = document.getElementById('post-image').value.trim();
   const category  = document.getElementById('post-category').value;
   const status    = document.getElementById('post-status').value;
@@ -135,18 +114,19 @@ async function updatePost() {
   errBox.style.display = 'none';
 
   if (!title || title.length < 3) {
-    errBox.textContent = 'Title is required (at least 3 characters).';
+    errBox.textContent   = 'Title is required (at least 3 characters).';
     errBox.style.display = 'block';
     document.getElementById('post-title').focus();
     return;
   }
-  if (!content || quill.getText().trim().length < 10) {
-    errBox.textContent = 'Content is required.';
+  if (plainText.length < 10) {
+    errBox.textContent   = 'Content is required.';
     errBox.style.display = 'block';
+    editor.commands.focus();
     return;
   }
 
-  ['update-btn','update-btn-2'].forEach(id => {
+  ['update-btn', 'update-btn-2'].forEach(id => {
     const b = document.getElementById(id);
     if (b) { b.classList.add('loading'); b.disabled = true; }
   });
@@ -159,17 +139,18 @@ async function updatePost() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Update failed');
-    showToast('Post updated successfully!', 'success');
+
+    showToast('Post updated!', 'success');
+
     if (status === 'published') {
       const link = document.getElementById('preview-link');
-      link.href  = `../post.html?id=${postId}`;
-      link.style.display = 'inline-flex';
+      if (link) { link.href = `../post.html?id=${postId}`; link.style.display = 'inline-flex'; }
     }
   } catch (err) {
     errBox.textContent   = err.message || 'Something went wrong.';
     errBox.style.display = 'block';
   } finally {
-    ['update-btn','update-btn-2'].forEach(id => {
+    ['update-btn', 'update-btn-2'].forEach(id => {
       const b = document.getElementById(id);
       if (b) { b.classList.remove('loading'); b.disabled = false; }
     });
@@ -179,4 +160,5 @@ async function updatePost() {
 document.getElementById('update-btn').onclick   = updatePost;
 document.getElementById('update-btn-2').onclick = updatePost;
 
+// ── Init ──────────────────────────────────────────────────────────────
 loadPost();
