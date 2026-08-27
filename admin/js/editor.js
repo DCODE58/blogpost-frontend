@@ -50,6 +50,37 @@ function sep() {
   return d;
 }
 
+/* ── Font-family dropdown ────────────────────────────────────────────── */
+const FONT_CHOICES = [
+  { label: 'Body font',    value: ''                                    },
+  { label: 'Display',      value: "'Barlow Condensed', Impact, sans-serif" },
+  { label: 'Mono',         value: "'IBM Plex Mono', 'Courier New', monospace" },
+  { label: 'Serif',        value: "Georgia, 'Times New Roman', serif"    },
+  { label: 'Sans',         value: "Helvetica, Arial, sans-serif"         },
+];
+
+function fontSelect(editor) {
+  const select = document.createElement('select');
+  select.className = 'toolbar-select';
+  select.title = 'Font family';
+  FONT_CHOICES.forEach(({ label, value }) => {
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = label;
+    select.appendChild(opt);
+  });
+  select.addEventListener('mousedown', e => e.stopPropagation());
+  select.addEventListener('change', () => {
+    const value = select.value;
+    if (value === '') {
+      editor.chain().focus().unsetFontFamily().run();
+    } else {
+      editor.chain().focus().setFontFamily(value).run();
+    }
+  });
+  return select;
+}
+
 function buildToolbar(editor, toolbar) {
   const add = (...els) => els.forEach(el => toolbar.appendChild(el));
 
@@ -69,6 +100,9 @@ function buildToolbar(editor, toolbar) {
       { 'data-level': level }));
   });
   add(sep());
+
+  // ── Font family ──────────────────────────────────────────────────────
+  add(fontSelect(editor), sep());
 
   // ── Alignment ────────────────────────────────────────────────────────
   add(
@@ -165,6 +199,12 @@ function refreshToolbar(editor, toolbar) {
     toolbar.querySelectorAll(sel).forEach(el =>
       el.classList.toggle('is-active', check()));
   });
+
+  const select = toolbar.querySelector('.toolbar-select');
+  if (select) {
+    const current = editor.getAttributes('textStyle').fontFamily || '';
+    if (select.value !== current) select.value = current;
+  }
 }
 
 /* ── Public: initEditor ───────────────────────────────────────────────── */
@@ -184,6 +224,7 @@ function initEditor(wrapId, placeholder) {
       ext.Underline,
       ext.TextStyle,
       ext.Color,
+      ext.FontFamily,
       ext.Highlight,
       ext.Image.configure({ allowBase64: false, inline: false }),
       ext.Link.configure({ openOnClick: false, autolink: true }),
