@@ -1,42 +1,52 @@
 /* ── IMPORTS ──────────────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,400&family=DM+Sans:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
 
 /* ── VARIABLES ────────────────────────────────────────────────────────── */
 :root {
-  --cream:        #EDE4D0;
-  --cream-2:      #E4D9C2;
-  --cream-3:      #D9CEBC;
-  --paper:        #F5F0E6;
-  --ink:          #1A1814;
-  --ink-soft:     #2D2820;
-  --muted:        #6B6456;
-  --muted-light:  #9A9088;
-  --orange:       #E86428;
-  --orange-light: #F07A42;
-  --orange-pale:  #FDEEE5;
-  --card-yellow:  #F5D76E;
-  --card-yellow-2:#EEC94A;
-  --card-pink:    #F5A7C0;
-  --card-pink-2:  #ED80A4;
-  --card-sage:    #B8CF9A;
-  --card-sage-2:  #96B872;
-  --card-sky:     #9DD0E0;
-  --success:      #4A9B6A;
-  --success-pale: #E8F7EE;
-  --danger:       #D04040;
-  --danger-pale:  #FDEDED;
-  --border:       #1A1814;
-  --border-light: #D4CABC;
+  --cream:        #EFEAE0;
+  --cream-2:      #E3DCCC;
+  --cream-3:      #D6CDB8;
+  --paper:        #FAF8F2;
+  --ink:          #12100D;
+  --ink-soft:     #221F19;
+  --muted:        #5C5548;
+  --muted-light:  #8B8375;
+  --orange:       #E2461C;
+  --orange-light: #F05E33;
+  --orange-pale:  #FCE7DF;
+  --card-yellow:  #F0C929;
+  --card-yellow-2:#DDB612;
+  --card-pink:    #E8578C;
+  --card-pink-2:  #D63E74;
+  --card-sage:    #6E9B4F;
+  --card-sage-2:  #587D3C;
+  --card-sky:     #2E8FA8;
+  --success:      #2F8C55;
+  --success-pale: #E4F5EA;
+  --danger:       #C4291F;
+  --danger-pale:  #FCE9E7;
+  --border:       #12100D;
+  --border-light: #CBC0AB;
   --border-w:     2px;
-  --radius-sm:    8px;
-  --radius:       14px;
-  --radius-lg:    20px;
+  --radius-sm:    6px;
+  --radius:       10px;
+  --radius-lg:    16px;
   --sidebar-w:    220px;
-  --shadow:       4px 4px 0px #1A1814;
-  --shadow-sm:    2px 2px 0px #1A1814;
-  --transition:   0.18s ease;
-  --font-display: 'Fraunces', Georgia, serif;
-  --font-ui:      'Syne', system-ui, sans-serif;
+  --shadow:       4px 4px 0px #12100D;
+  --shadow-sm:    2px 2px 0px #12100D;
+  --transition:   0.15s ease;
+
+  /* Editor surface vars (also consumed by editor.css) — the TipTap
+     editor is a dark "composer" island inside the light admin panel,
+     so it needs its own bg/fg pair distinct from the page's cream/ink. */
+  --bg:           #1C1812;
+  --fg:           #F2EEE4;
+  --sidebar-bg:   var(--ink);
+  --editor-line:  rgba(242,238,228,0.14);
+  --editor-muted: #A69C89;
+
+  --font-display: 'Barlow Condensed', 'Impact', sans-serif;
+  --font-ui:      'IBM Plex Mono', 'Courier New', monospace;
   --font-body:    'DM Sans', system-ui, sans-serif;
 }
 
@@ -114,11 +124,12 @@ button, input, select, textarea { font-family: inherit; }
 
 .login-big-text {
   font-family: var(--font-display);
-  font-size: 3.2rem;
-  font-weight: 700;
+  font-size: 4rem;
+  font-weight: 800;
+  text-transform: uppercase;
   color: var(--paper);
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  line-height: 0.98;
+  letter-spacing: -0.01em;
   margin-bottom: 1.2rem;
 }
 
@@ -157,8 +168,10 @@ button, input, select, textarea { font-family: inherit; }
 
 .login-logo {
   font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
   margin-bottom: 2.5rem;
   display: flex;
   align-items: center;
@@ -173,10 +186,12 @@ button, input, select, textarea { font-family: inherit; }
 
 .login-title {
   font-family: var(--font-display);
-  font-size: 2.2rem;
-  font-weight: 700;
-  line-height: 1.15;
-  margin-bottom: 0.5rem;
+  font-size: 2.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  line-height: 1;
+  letter-spacing: -0.005em;
+  margin-bottom: 0.6rem;
 }
 
 .login-subtitle { font-size: 0.9rem; color: var(--muted); margin-bottom: 2.5rem; }
@@ -352,8 +367,10 @@ button, input, select, textarea { font-family: inherit; }
 
 .sidebar-logo {
   font-family: var(--font-display);
-  font-size: 1.35rem;
-  font-weight: 700;
+  font-size: 1.55rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
   color: var(--paper);
   display: flex;
   align-items: center;
@@ -468,7 +485,7 @@ button, input, select, textarea { font-family: inherit; }
   z-index: 40;
 }
 
-.topbar-title { font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; }
+.topbar-title { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.01em; }
 .topbar-actions { display: flex; gap: 0.6rem; align-items: center; }
 
 .admin-body { padding: 1.8rem; flex: 1; }
@@ -512,9 +529,10 @@ button, input, select, textarea { font-family: inherit; }
 
 .stat-card-value {
   font-family: var(--font-display);
-  font-size: 2.8rem;
-  font-weight: 700;
-  line-height: 1;
+  font-size: 3.4rem;
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.01em;
 }
 
 .stat-card-deco {
@@ -545,7 +563,7 @@ button, input, select, textarea { font-family: inherit; }
   background: var(--cream-2);
 }
 
-.table-card-title { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; }
+.table-card-title { font-family: var(--font-display); font-size: 1.4rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.01em; }
 
 .table-filters { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
 
@@ -632,8 +650,9 @@ td { padding: 0.85rem 1.2rem; font-size: 0.86rem; vertical-align: middle; }
 
 .editor-field-title {
   font-family: var(--font-display);
-  font-size: 1.55rem;
+  font-size: 1.9rem;
   font-weight: 700;
+  letter-spacing: -0.005em;
   padding: 0.3rem 0 0.8rem;
   border: none;
   border-bottom: var(--border-w) solid var(--border);
@@ -778,7 +797,7 @@ td { padding: 0.85rem 1.2rem; font-size: 0.86rem; vertical-align: middle; }
 }
 .modal-icon svg { width: 20px; height: 20px; color: var(--danger); }
 
-.modal-title { font-family: var(--font-display); font-size: 1.35rem; font-weight: 700; margin-bottom: 0.45rem; }
+.modal-title { font-family: var(--font-display); font-size: 1.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.005em; margin-bottom: 0.5rem; }
 .modal-text { font-size: 0.88rem; color: var(--muted); margin-bottom: 1.5rem; line-height: 1.6; }
 .modal-actions { display: flex; gap: 0.6rem; justify-content: flex-end; }
 
