@@ -1,3 +1,55 @@
+// ── SCROLL FX: progress bar, header shrink, back-to-top ─────────────────
+(function initScrollFx() {
+  const progress = document.getElementById('scroll-progress');
+  const header   = document.getElementById('site-header');
+  const toTop    = document.getElementById('back-to-top');
+
+  function onScroll() {
+    const scrollTop    = window.scrollY;
+    const docHeight    = document.documentElement.scrollHeight - window.innerHeight;
+    const pct          = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    if (progress) progress.style.width = pct + '%';
+    if (header) header.classList.toggle('scrolled', scrollTop > 8);
+    if (toTop)  toTop.classList.toggle('visible', scrollTop > 500);
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  if (toTop) {
+    toTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  }
+})();
+
+// ── HERO FEATURED CARD TILT ──────────────────────────────────────────────
+(function initHeroTilt() {
+  const card = document.getElementById('hero-featured');
+  if (!card || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  card.addEventListener('mousemove', e => {
+    const rect = card.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    card.style.transform = `perspective(800px) rotateX(${-y * 6}deg) rotateY(${x * 8}deg)`;
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.transform = 'perspective(800px) rotateX(0deg) rotateY(0deg)';
+  });
+})();
+
+// ── SCROLL REVEAL ─────────────────────────────────────────────────────────
+const revealObserver = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('in-view');
+      revealObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+function observeReveal(el) { revealObserver.observe(el); }
+document.querySelectorAll('.reveal').forEach(observeReveal);
+
 // ── TOAST ──────────────────────────────────────────────────────────────
 function showToast(msg, type) {
   const t = document.getElementById('toast');
@@ -117,7 +169,7 @@ function renderPosts(posts) {
     return;
   }
 
-  grid.innerHTML = posts.map(post => {
+  grid.innerHTML = posts.map((post, i) => {
     const excerpt  = smartExcerpt(post.excerpt || post.content || '');
     const colour   = pillColour(post.category || 'General');
     const imageHtml = post.image_url
@@ -127,9 +179,10 @@ function renderPosts(posts) {
            <path d="m3 9 4-4 4 4 4-4 4 4"/>
            <circle cx="8.5" cy="13.5" r="1.5"/>
          </svg>`;
+    const delay = (i % 9) * 0.06;
 
     return `
-      <article class="post-card">
+      <article class="post-card card-reveal" style="--reveal-delay:${delay}s">
         <a href="post.html?id=${post.id}" class="post-card-image${!post.image_url ? ' no-image' : ''}">
           ${imageHtml}
         </a>
@@ -160,6 +213,8 @@ function renderPosts(posts) {
         </div>
       </article>`;
   }).join('');
+
+  grid.querySelectorAll('.card-reveal').forEach(observeReveal);
 }
 
 // ── PAGINATION ─────────────────────────────────────────────────────────
