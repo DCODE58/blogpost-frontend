@@ -182,6 +182,8 @@ async function loadPost() {
       imgHtml +
       '<div class="post-content">' + post.content + '</div>';
 
+    document.getElementById('post-content').classList.add('loaded');
+
     // Only count a view if this device hasn't viewed this post in 90 days.
     // localStorage is the first gate; the server-side IP hash is the second.
     if (!hasViewedRecently(id)) {
@@ -220,3 +222,28 @@ async function loadPost() {
 }
 
 loadPost();
+
+// ── SCROLL FX: reading-progress bar, header shrink, back-to-top ────────
+(function initScrollFx() {
+  var progress = document.getElementById('scroll-progress');
+  var header   = document.getElementById('site-header');
+  var toTop    = document.getElementById('back-to-top');
+
+  function onScroll() {
+    var scrollTop = window.scrollY;
+    var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    var pct       = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    if (progress) progress.style.width = pct + '%';
+    if (header)   header.classList.toggle('scrolled', scrollTop > 8);
+    if (toTop)    toTop.classList.toggle('visible', scrollTop > 500);
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  if (toTop) {
+    toTop.addEventListener('click', function() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+})();
