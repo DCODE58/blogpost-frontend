@@ -314,11 +314,67 @@ document.getElementById('search-input').addEventListener('input', function(e) {
   }, 420);
 });
 
-document.getElementById('category-filter').addEventListener('change', function(e) {
+document.getElementById('category-filter')?.addEventListener('change', function(e) {
   currentCategory = e.target.value;
   currentPage     = 1;
   fetchPosts();
 });
+
+// ── CATEGORY DROPDOWN (custom, colourful) ────────────────────────────────
+(function initCategoryDropdown() {
+  const CATEGORIES = ['Technology', 'Culture', 'Health', 'Business', 'Science', 'General'];
+
+  const root    = document.getElementById('cat-select');
+  const trigger = document.getElementById('cat-select-trigger');
+  const label   = document.getElementById('cat-select-label');
+  const dot     = document.getElementById('cat-select-dot');
+  const menu    = document.getElementById('cat-select-menu');
+  if (!root || !menu) return;
+
+  function optionRow(value, text) {
+    const colour = value ? pillColour(value) : null;
+    const li = document.createElement('li');
+    li.className = 'cat-select-option' + (value === currentCategory ? ' selected' : '');
+    li.setAttribute('role', 'option');
+    li.setAttribute('data-value', value);
+    if (colour) li.style.setProperty('--option-tint', colour.replace('var(', 'color-mix(in srgb,').replace(')', ' 22%, var(--paper))'));
+    li.innerHTML = `
+      <span class="cat-select-dot" ${colour ? `style="--dot-colour:${colour}"` : ''}></span>
+      <span>${text}</span>
+      <svg class="cat-select-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>`;
+    li.addEventListener('click', () => selectCategory(value, text, colour));
+    return li;
+  }
+
+  function renderMenu() {
+    menu.innerHTML = '';
+    menu.appendChild(optionRow('', 'All Categories'));
+    CATEGORIES.forEach(cat => menu.appendChild(optionRow(cat, cat)));
+  }
+
+  function selectCategory(value, text, colour) {
+    currentCategory = value;
+    currentPage     = 1;
+    label.textContent = text;
+    dot.style.setProperty('--dot-colour', colour || '');
+    if (!colour) dot.style.removeProperty('--dot-colour');
+    closeMenu();
+    renderMenu();
+    fetchPosts();
+  }
+
+  function openMenu()  { root.classList.add('is-open');  trigger.setAttribute('aria-expanded', 'true'); }
+  function closeMenu() { root.classList.remove('is-open'); trigger.setAttribute('aria-expanded', 'false'); }
+  function toggleMenu() { root.classList.contains('is-open') ? closeMenu() : openMenu(); }
+
+  trigger.addEventListener('click', toggleMenu);
+  document.addEventListener('click', e => { if (!root.contains(e.target)) closeMenu(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
+
+  renderMenu();
+})();
 
 // ── INIT ───────────────────────────────────────────────────────────────
 loadHeroFeatured();
