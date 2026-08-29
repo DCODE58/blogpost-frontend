@@ -99,15 +99,16 @@
         </svg>
         <input id="search-input" class="search-input" type="search" placeholder="Search stories..." />
       </div>
-      <select id="category-filter" class="filter-select">
-        <option value="">All Categories</option>
-        <option value="Technology">Technology</option>
-        <option value="Culture">Culture</option>
-        <option value="Health">Health</option>
-        <option value="Business">Business</option>
-        <option value="Science">Science</option>
-        <option value="General">General</option>
-      </select>
+      <div class="cat-select" id="cat-select">
+        <button type="button" class="cat-select-trigger" id="cat-select-trigger" aria-haspopup="listbox" aria-expanded="false">
+          <span class="cat-select-dot" id="cat-select-dot"></span>
+          <span id="cat-select-label">All Categories</span>
+          <svg class="cat-select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <ul class="cat-select-menu" id="cat-select-menu" role="listbox" aria-label="Filter by category"></ul>
+      </div>
     </div>
   </section>
 
