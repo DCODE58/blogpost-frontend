@@ -154,6 +154,59 @@ function showSkeleton() {
 }
 
 // ── RENDER POSTS ───────────────────────────────────────────────────────
+function postCardHtml(post, i, isLead) {
+  const excerpt  = smartExcerpt(post.excerpt || post.content || '');
+  const colour   = pillColour(post.category || 'General');
+  const imageHtml = post.image_url
+    ? `<img src="${post.image_url}" alt="${post.title}" loading="lazy" />`
+    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+         <rect x="3" y="3" width="18" height="18" rx="2"/>
+         <path d="m3 9 4-4 4 4 4-4 4 4"/>
+         <circle cx="8.5" cy="13.5" r="1.5"/>
+       </svg>`;
+  const delay = (i % 9) * 0.06;
+  const readCta = isLead
+    ? `<a href="post.html?id=${post.id}" class="lead-cta">
+         Read the story
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+           <path d="M5 12h14M12 5l7 7-7 7"/>
+         </svg>
+       </a>`
+    : `<a href="post.html?id=${post.id}" class="read-more">
+         Read
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13">
+           <path d="M5 12h14M12 5l7 7-7 7"/>
+         </svg>
+       </a>`;
+
+  return `
+    <article class="post-card card-reveal${isLead ? ' lead-card' : ''}" style="--reveal-delay:${delay}s">
+      <a href="post.html?id=${post.id}" class="post-card-image${!post.image_url ? ' no-image' : ''}">
+        ${imageHtml}
+      </a>
+      <div class="post-card-body">
+        <span class="post-card-category" style="background:${isLead ? '' : colour}">${isLead ? 'Featured' : (post.category || 'General')}</span>
+        <a href="post.html?id=${post.id}">
+          <h2 class="post-card-title">${post.title}</h2>
+        </a>
+        <p class="post-card-excerpt">${excerpt}</p>
+        <div class="post-card-footer">
+          <div class="post-card-meta">
+            <span class="post-card-date">${formatDate(post.created_at)}</span>
+            <span class="post-card-views">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              ${Number(post.views).toLocaleString()} views
+            </span>
+          </div>
+          ${readCta}
+        </div>
+      </div>
+    </article>`;
+}
+
 function renderPosts(posts) {
   const grid = document.getElementById('posts-grid');
 
@@ -169,51 +222,23 @@ function renderPosts(posts) {
     return;
   }
 
-  grid.innerHTML = posts.map((post, i) => {
-    const excerpt  = smartExcerpt(post.excerpt || post.content || '');
-    const colour   = pillColour(post.category || 'General');
-    const imageHtml = post.image_url
-      ? `<img src="${post.image_url}" alt="${post.title}" loading="lazy" />`
-      : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-           <rect x="3" y="3" width="18" height="18" rx="2"/>
-           <path d="m3 9 4-4 4 4 4-4 4 4"/>
-           <circle cx="8.5" cy="13.5" r="1.5"/>
-         </svg>`;
-    const delay = (i % 9) * 0.06;
+  // The magazine "lead" treatment only makes sense for the freshest post
+  // on the unfiltered, first page — once someone searches or filters,
+  // there's no meaningful "featured" story to highlight.
+  const showLead = currentPage === 1 && !currentSearch && !currentCategory;
 
-    return `
-      <article class="post-card card-reveal" style="--reveal-delay:${delay}s">
-        <a href="post.html?id=${post.id}" class="post-card-image${!post.image_url ? ' no-image' : ''}">
-          ${imageHtml}
-        </a>
-        <div class="post-card-body">
-          <span class="post-card-category" style="background:${colour}">${post.category || 'General'}</span>
-          <a href="post.html?id=${post.id}">
-            <h2 class="post-card-title">${post.title}</h2>
-          </a>
-          <p class="post-card-excerpt">${excerpt}</p>
-          <div class="post-card-footer">
-            <div class="post-card-meta">
-              <span class="post-card-date">${formatDate(post.created_at)}</span>
-              <span class="post-card-views">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-                ${Number(post.views).toLocaleString()} views
-              </span>
-            </div>
-            <a href="post.html?id=${post.id}" class="read-more">
-              Read
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13">
-                <path d="M5 12h14M12 5l7 7-7 7"/>
-              </svg>
-            </a>
-          </div>
-        </div>
-      </article>`;
-  }).join('');
+  let html = '';
+  if (showLead) {
+    html += postCardHtml(posts[0], 0, true);
+    if (posts.length > 1) {
+      html += `<div class="more-stories-label">More Stories</div>`;
+      html += posts.slice(1).map((post, i) => postCardHtml(post, i, false)).join('');
+    }
+  } else {
+    html += posts.map((post, i) => postCardHtml(post, i, false)).join('');
+  }
 
+  grid.innerHTML = html;
   grid.querySelectorAll('.card-reveal').forEach(observeReveal);
 }
 
