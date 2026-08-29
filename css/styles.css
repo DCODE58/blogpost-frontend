@@ -594,7 +594,7 @@ img { display: block; max-width: 100%; }
   line-height: 1.65;
   flex: 1;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -625,9 +625,10 @@ img { display: block; max-width: 100%; }
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   color: var(--muted-light);
   font-family: var(--font-body);
+  opacity: 0.85;
 }
 
 .post-card-views svg { width: 12px; height: 12px; }
@@ -644,6 +645,97 @@ img { display: block; max-width: 100%; }
 }
 
 .read-more:hover { gap: 0.7rem; }
+
+/* ── LEAD CARD (magazine layout) ─────────────────────────────────────── */
+.lead-card {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  box-shadow: var(--shadow);
+}
+
+.lead-card:hover {
+  transform: translate(-4px, -4px);
+  box-shadow: 8px 8px 0px var(--border);
+}
+
+.lead-card .post-card-image {
+  flex: 0 0 52%;
+  aspect-ratio: auto;
+  border-bottom: none;
+  border-right: var(--border-w) solid var(--border);
+}
+
+.lead-card .post-card-body {
+  flex: 1;
+  padding: 2rem 2.2rem;
+  justify-content: center;
+}
+
+.lead-card .post-card-category {
+  background: var(--orange);
+  color: var(--paper);
+  border-color: var(--orange);
+}
+
+.lead-card .post-card-title {
+  font-size: clamp(1.7rem, 2.6vw, 2.4rem);
+  line-height: 1.08;
+  margin-bottom: 0.9rem;
+}
+
+.lead-card .post-card-excerpt {
+  -webkit-line-clamp: 3;
+  font-size: 0.98rem;
+  line-height: 1.7;
+}
+
+.lead-card .post-card-footer { margin-top: 1.4rem; padding-top: 1.1rem; }
+
+.lead-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.3rem;
+  border-radius: 100px;
+  border: var(--border-w) solid var(--border);
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+
+.lead-cta:hover {
+  background: var(--orange);
+  border-color: var(--orange);
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.lead-cta svg { width: 14px; height: 14px; }
+
+.more-stories-label {
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0.4rem 0 -0.3rem;
+}
+
+.more-stories-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-light);
+}
 
 /* ── PAGINATION ───────────────────────────────────────────────────────── */
 .pagination {
@@ -925,6 +1017,8 @@ img { display: block; max-width: 100%; }
   .main-content { padding: 2rem 1.5rem; }
   .hero { padding: 4rem 1.5rem; }
   .post-article { max-width: 680px; }
+  .lead-card { flex-direction: column; }
+  .lead-card .post-card-image { flex: none; aspect-ratio: 16/9; border-right: none; border-bottom: var(--border-w) solid var(--border); }
 }
 
 /* Mobile: below 768px */
@@ -959,6 +1053,8 @@ img { display: block; max-width: 100%; }
   .site-footer { padding: 1.5rem 1.2rem; margin-top: 2.5rem; }
   .back-to-top { bottom: 1.1rem; right: 1.1rem; width: 42px; height: 42px; }
   .ticker-item { font-size: 0.7rem; padding: 0.5rem 1.1rem; }
+  .lead-card .post-card-body { padding: 1.4rem; }
+  .lead-card .post-card-title { font-size: 1.5rem; }
 }
 
 /* Small phones: below 480px */
