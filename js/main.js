@@ -91,6 +91,35 @@ function pillColour(category) {
   return PILL_COLOURS[Math.abs(hash) % PILL_COLOURS.length];
 }
 
+// ── CATEGORY ICONS & COLOURS ──────────────────────────────────────────
+// Each known category gets its own icon + colour pairing (not an
+// arbitrary hash) so the badge is actually meaningful at a glance.
+const ICONS = {
+  technology: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg>',
+  business: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
+  culture: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 20 7 4 7"/><line x1="6" y1="10" x2="6" y2="18"/><line x1="10" y1="10" x2="10" y2="18"/><line x1="14" y1="10" x2="14" y2="18"/><line x1="18" y1="10" x2="18" y2="18"/><line x1="3" y1="21" x2="21" y2="21"/></svg>',
+  health: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+  science: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 2v6.34a2 2 0 0 1-.3 1.06L4.24 17.7A2 2 0 0 0 6 21h12a2 2 0 0 0 1.76-3.3l-4.46-8.3A2 2 0 0 1 15 8.34V2"/><path d="M8.5 2h7"/><path d="M6.5 14.5h11"/></svg>',
+  general: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2H3v9l9.6 9.6a2 2 0 0 0 2.83 0l6.17-6.17a2 2 0 0 0 0-2.83z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/></svg>',
+  all: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>',
+  star: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+};
+
+const CATEGORY_META = {
+  Technology: { bg: 'var(--card-sky)',  fg: 'var(--ink)',   icon: ICONS.technology },
+  Business:   { bg: 'var(--orange)',    fg: 'var(--paper)', icon: ICONS.business },
+  Culture:    { bg: 'var(--card-pink)', fg: 'var(--ink)',   icon: ICONS.culture },
+  Health:     { bg: '#F0968A',          fg: 'var(--ink)',   icon: ICONS.health },
+  Science:    { bg: '#C9B8E8',          fg: 'var(--ink)',   icon: ICONS.science },
+  General:    { bg: 'var(--cream-2)',   fg: 'var(--ink)',   icon: ICONS.general },
+};
+
+function getCategoryMeta(name) {
+  if (CATEGORY_META[name]) return CATEGORY_META[name];
+  // Unknown/custom category from the backend — still colourful, generic icon.
+  return { bg: pillColour(name || 'General'), fg: 'var(--ink)', icon: ICONS.general };
+}
+
 // ── SEO ────────────────────────────────────────────────────────────────
 function setMeta(title, description) {
   document.title = title;
@@ -156,7 +185,8 @@ function showSkeleton() {
 // ── RENDER POSTS ───────────────────────────────────────────────────────
 function postCardHtml(post, i, isLead) {
   const excerpt  = smartExcerpt(post.excerpt || post.content || '');
-  const colour   = pillColour(post.category || 'General');
+  const catName  = post.category || 'General';
+  const meta     = getCategoryMeta(catName);
   const imageHtml = post.image_url
     ? `<img src="${post.image_url}" alt="${post.title}" loading="lazy" />`
     : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
@@ -165,6 +195,9 @@ function postCardHtml(post, i, isLead) {
          <circle cx="8.5" cy="13.5" r="1.5"/>
        </svg>`;
   const delay = (i % 9) * 0.06;
+  const badgeHtml = isLead
+    ? `<span class="post-card-category">${ICONS.star}Featured</span>`
+    : `<span class="post-card-category" style="background:${meta.bg};color:${meta.fg}">${meta.icon}${catName}</span>`;
   const readCta = isLead
     ? `<a href="post.html?id=${post.id}" class="lead-cta">
          Read the story
@@ -185,7 +218,7 @@ function postCardHtml(post, i, isLead) {
         ${imageHtml}
       </a>
       <div class="post-card-body">
-        <span class="post-card-category" style="background:${isLead ? '' : colour}">${isLead ? 'Featured' : (post.category || 'General')}</span>
+        ${badgeHtml}
         <a href="post.html?id=${post.id}">
           <h2 class="post-card-title">${post.title}</h2>
         </a>
@@ -324,27 +357,27 @@ document.getElementById('category-filter')?.addEventListener('change', function(
 (function initCategoryDropdown() {
   const CATEGORIES = ['Technology', 'Culture', 'Health', 'Business', 'Science', 'General'];
 
-  const root    = document.getElementById('cat-select');
-  const trigger = document.getElementById('cat-select-trigger');
-  const label   = document.getElementById('cat-select-label');
-  const dot     = document.getElementById('cat-select-dot');
-  const menu    = document.getElementById('cat-select-menu');
+  const root      = document.getElementById('cat-select');
+  const trigger   = document.getElementById('cat-select-trigger');
+  const label     = document.getElementById('cat-select-label');
+  const triggerIc = document.getElementById('cat-select-icon');
+  const menu      = document.getElementById('cat-select-menu');
   if (!root || !menu) return;
 
   function optionRow(value, text) {
-    const colour = value ? pillColour(value) : null;
+    const meta = value ? getCategoryMeta(value) : { bg: null, fg: null, icon: ICONS.all };
     const li = document.createElement('li');
     li.className = 'cat-select-option' + (value === currentCategory ? ' selected' : '');
     li.setAttribute('role', 'option');
     li.setAttribute('data-value', value);
-    if (colour) li.style.setProperty('--option-tint', colour.replace('var(', 'color-mix(in srgb,').replace(')', ' 22%, var(--paper))'));
+    const badgeStyle = meta.bg ? `style="--badge-bg:${meta.bg};--badge-fg:${meta.fg}"` : '';
     li.innerHTML = `
-      <span class="cat-select-dot" ${colour ? `style="--dot-colour:${colour}"` : ''}></span>
+      <span class="cat-select-icon" ${badgeStyle}>${meta.icon}</span>
       <span>${text}</span>
       <svg class="cat-select-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
         <polyline points="20 6 9 17 4 12"/>
       </svg>`;
-    li.addEventListener('click', () => selectCategory(value, text, colour));
+    li.addEventListener('click', () => selectCategory(value, text, meta));
     return li;
   }
 
@@ -354,12 +387,18 @@ document.getElementById('category-filter')?.addEventListener('change', function(
     CATEGORIES.forEach(cat => menu.appendChild(optionRow(cat, cat)));
   }
 
-  function selectCategory(value, text, colour) {
+  function selectCategory(value, text, meta) {
     currentCategory = value;
     currentPage     = 1;
     label.textContent = text;
-    dot.style.setProperty('--dot-colour', colour || '');
-    if (!colour) dot.style.removeProperty('--dot-colour');
+    triggerIc.innerHTML = meta.icon;
+    if (meta.bg) {
+      triggerIc.style.setProperty('--badge-bg', meta.bg);
+      triggerIc.style.setProperty('--badge-fg', meta.fg);
+    } else {
+      triggerIc.style.removeProperty('--badge-bg');
+      triggerIc.style.removeProperty('--badge-fg');
+    }
     closeMenu();
     renderMenu();
     fetchPosts();
@@ -373,6 +412,7 @@ document.getElementById('category-filter')?.addEventListener('change', function(
   document.addEventListener('click', e => { if (!root.contains(e.target)) closeMenu(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
 
+  triggerIc.innerHTML = ICONS.all;
   renderMenu();
 })();
 
