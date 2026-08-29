@@ -405,13 +405,20 @@ img { display: block; max-width: 100%; }
   box-shadow: 2px 2px 0 var(--orange);
 }
 
-.cat-select-dot {
-  width: 11px; height: 11px;
+.cat-select-icon {
+  width: 24px; height: 24px;
   border-radius: 50%;
   border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  background: var(--dot-colour, conic-gradient(var(--card-yellow) 0 25%, var(--card-pink) 25% 50%, var(--card-sage) 50% 75%, var(--card-sky) 75% 100%));
+  background: var(--badge-bg, var(--ink));
+  color: var(--badge-fg, var(--paper));
+  transition: background var(--transition), color var(--transition);
 }
+
+.cat-select-icon svg { width: 13px; height: 13px; }
 
 .cat-select-chevron {
   width: 13px; height: 13px;
@@ -426,7 +433,7 @@ img { display: block; max-width: 100%; }
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  min-width: 200px;
+  min-width: 210px;
   background: var(--paper);
   border: var(--border-w) solid var(--border);
   border-radius: var(--radius-sm);
@@ -449,9 +456,9 @@ img { display: block; max-width: 100%; }
 .cat-select-option {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0.55rem 0.7rem;
-  border-radius: 7px;
+  gap: 0.7rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 8px;
   font-family: var(--font-body);
   font-size: 0.88rem;
   font-weight: 500;
@@ -460,12 +467,7 @@ img { display: block; max-width: 100%; }
   transition: background var(--transition), padding-left var(--transition);
 }
 
-.cat-select-option .cat-select-dot { border-width: 1.5px; }
-
-.cat-select-option:hover {
-  background: var(--option-tint, var(--cream-2));
-  padding-left: 0.9rem;
-}
+.cat-select-option:hover { background: var(--cream-2); padding-left: 0.85rem; }
 
 .cat-select-option.selected {
   font-weight: 700;
@@ -657,22 +659,26 @@ img { display: block; max-width: 100%; }
   flex-direction: column;
 }
 
-/* Category pill — image 2 style */
+/* Category pill — icon + label, one distinct look per category */
 .post-card-category {
-  display: inline-block;
-  padding: 0.2rem 0.72rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.28rem 0.75rem 0.28rem 0.55rem;
   border-radius: 100px;
   border: var(--border-w) solid var(--border);
   font-family: var(--font-ui);
   font-size: 0.66rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink);
   background: var(--card-yellow);
   margin-bottom: 0.75rem;
   align-self: flex-start;
 }
+
+.post-card-category svg { width: 12px; height: 12px; flex-shrink: 0; }
 
 .post-card-title {
   font-family: var(--font-display);
